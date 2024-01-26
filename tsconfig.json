@@ -1,0 +1,23 @@
+{
+  "include": ["src/**/*"],
+  "exclude": [],
+  "compilerOptions": {
+      "module": "nodenext",
+      "strict": true,
+      "removeComments": true,
+      "exactOptionalPropertyTypes": true,
+      "noFallthroughCasesInSwitch": true,
+      "noImplicitOverride": true,
+      "noPropertyAccessFromIndexSignature": true,
+      "noUncheckedIndexedAccess": true,
+      "declaration": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noImplicitReturns": true,
+      "jsx": "react",
+      "target": "esnext",
+      "alwaysStrict": true,
+      "noImplicitAny": true,
+      "sourceMap": true
+  }
+}
