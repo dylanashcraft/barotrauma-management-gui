@@ -1,16 +1,14 @@
-import express from 'express';
+import * as express from 'express';
 
 const app = express();
 const port = 3000;
 
-interface Player {
+export interface Player {
     steamid: string;
     name: string;
 }
-
 const testData: Player[] = [{ steamid: '4484', name: 'Frank' }, { steamid: '8372', name: 'Tom_Ran' }];
-
-app.use(function(req: any, res: any, next: any) {
+app.use((req: any, res: any, next: any)=>{
     res.header("Access-Control-Allow-Origin", "*");
     return next();
 });
