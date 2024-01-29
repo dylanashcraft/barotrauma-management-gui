@@ -7,5 +7,5 @@ interface secrets{
   steamapikey: string
 }
 
-const Secrets:secrets = readJSONSync("secrets.json");
+const Secrets: secrets = readJSONSync("secrets.json");
 const Steam = new SteamAPI(Secrets.steamapikey);
