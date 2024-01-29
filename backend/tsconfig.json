@@ -3,6 +3,7 @@
   "exclude": [],
   "compilerOptions": {
       "module": "nodenext",
+      "allowSyntheticDefaultImports": true,
       "esModuleInterop": false,
       "strict": true,
       "removeComments": true,
