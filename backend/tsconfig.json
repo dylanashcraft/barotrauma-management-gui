@@ -14,7 +14,6 @@
       "noUnusedLocals": true,
       "noUnusedParameters": true,
       "noImplicitReturns": true,
-      "jsx": "react",
       "target": "esnext",
       "alwaysStrict": true,
       "noImplicitAny": true,
