@@ -2,7 +2,19 @@ import * as nodepty from "node-pty";
 //import steamconnector from "./steamconnect.mjs"
 import {Player} from "./main.js";
 
-export class BaroConnect{
+import * as fs from "fs-extra";
+function remoteconnect(){
+  const PW: string = (fs.readJSONSync("secrets.json")).sshPW;
+  const Terminal = nodepty.spawn("tmux", "new ssh btserver@140.82.22.198 -p 9090", {});
+  Terminal.onData((data)=>{
+    process.stdout.write(data);
+  });
+  Terminal.write("yes\n");
+  Terminal.write(`${PW}\n`);
+  Terminal.write("../btserver c\n");
+  return Terminal;
+}
+export default class BaroConnect{
   #server;
   #playerlist: Map<Player["name"], Player>;
   static #singelton = false;
@@ -10,8 +22,9 @@ export class BaroConnect{
     if(guard === true){throw "Do not construct directly, use the static create method"};
     if(BaroConnect.#singelton === true){throw "Do not create multiple instances of BaroConnect"};
     BaroConnect.#singelton = true;
-    this.#server = nodepty.spawn("../btserver", ["c"], {});
-    this.#server.write("\n");
+    //this.#server = nodepty.spawn("../btserver", "c", {});
+    //this.#server.write("\n");
+    this.#server = remoteconnect();
     this.#playerlist = this.#initPlayerList();
   }
   #initPlayerList(){
@@ -59,12 +72,13 @@ export class BaroConnect{
   banIP(player: string){
     this.runCommand(`banip ${player}`);
   }
-  clientList(){
+  clientList():[[Player["name"], Player]]{
     let listener = this.#server.onData((data)=>{
-      //get raw return data and format into custom data structure, then return it.
+      process.stdout.write(data);
     });
     this.runCommand(`clientlist`);
     listener.dispose();
+    return [["test", {name: "test", steamid:0}]]; //temporary filler data
   }
 }
 /*commands to implement:

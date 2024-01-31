@@ -2,8 +2,8 @@
   "include": ["src/**/*"],
   "exclude": [],
   "compilerOptions": {
-      "module": "nodenext",
-      "allowSyntheticDefaultImports": true,
+      "module": "NodeNext",
+      "allowSyntheticDefaultImports": false,
       "esModuleInterop": false,
       "strict": true,
       "removeComments": true,

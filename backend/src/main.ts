@@ -1,10 +1,10 @@
-import WebSocket, { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from "ws";
 
 const port = 3000;
 const wss = new WebSocketServer({ port: port });
 
 export interface Player {
-    steamid: string;
+    steamid: string|number;
     name: string;
 }
 
