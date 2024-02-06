@@ -2,7 +2,7 @@
   "name": "barotrauma-management-gui",
   "version": "0.1.0",
   "description": "",
-  "main": "src/main.js",
+  "main": "src/main.mjs",
   "scripts": {
     "build": "tsc --outDir build",
     "start": "node build/main.js",
