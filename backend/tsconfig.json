@@ -3,7 +3,7 @@
   "exclude": [],
   "compilerOptions": {
       "module": "NodeNext",
-      "allowSyntheticDefaultImports": false,
+      "allowSyntheticDefaultImports": true,
       "esModuleInterop": false,
       "strict": true,
       "removeComments": true,
