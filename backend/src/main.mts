@@ -1,6 +1,5 @@
 import WebSocket, { WebSocketServer } from "ws";
-import "./baroconnect.mjs";
-
+import BaroConnect from "./baroconnect.mjs";
 const port = 3000;
 const wss = new WebSocketServer({ port: port });
 
