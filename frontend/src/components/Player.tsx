@@ -23,8 +23,8 @@ const Player: React.FC = () => {
 
     React.useEffect(() => {
         if (lastMessage) {
-            const data: Player = JSON.parse(lastMessage.data);
-            setPlayerList([data]);
+            const data: Player[] = JSON.parse(lastMessage.data);
+            setPlayerList(data);
             console.log(data);
         }
     }, [lastMessage]);
@@ -40,7 +40,7 @@ const Player: React.FC = () => {
     <ul>
         {playerList.map((player) => (
             <li key={player.steamid}> 
-                {player.name}
+                User:{player.name} Steam ID:{player.steamid}
                 <button onClick={() => handleButtonOrange(player.name)}>Orange</button>
             </li>
         ))}
