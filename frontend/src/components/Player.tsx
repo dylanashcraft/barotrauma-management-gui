@@ -1,5 +1,5 @@
 import React from "react";
-import useWebSocket from "react-use-websocket";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 import NavBar from "./NavBar";
 
 interface Player {
@@ -29,10 +29,16 @@ const Player: React.FC = () => {
         }
     }, [lastMessage]);
 
-        const handleButtonOrange = (player: string) => {
-            const buttonCommand = "orange";
-            sendJsonMessage({ player, buttonCommand }, true);
-        };
+    const handleButtonOrange = (player: string) => {
+        if (ReadyState.OPEN === 1) console.log("WS Open");
+        else console.log("ERR: WS NOT READY");
+        const buttonCommand = "orange";
+        console.log(`Using:${buttonCommand} with ${player}`);
+        sendJsonMessage({ 
+            topic: buttonCommand,
+            payload: player 
+        });
+    };
 
   return (
     <div className="card">
