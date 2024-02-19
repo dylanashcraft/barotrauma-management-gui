@@ -1,3 +1,4 @@
+//@ts-nocheck // Do not remove until import errors are resolved.
 import * as nodepty from "node-pty";
 //import steamconnector from "./steamconnect.mjs"
 import {Player} from "./main.mjs";
