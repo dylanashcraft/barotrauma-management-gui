@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/main.mjs",
   "scripts": {
-    "build": "tsc --build --outDir build",
+    "build": "tsc --outDir build",
     "watch": "tsc --watch --outDir build",
     "start": "node build/main.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"

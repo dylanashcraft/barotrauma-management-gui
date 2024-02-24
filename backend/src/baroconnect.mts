@@ -78,7 +78,7 @@ export default class BaroConnect{
       
     });
     this.runCommand(`clientlist`);
-    //listener.dispose();
+    ///(?<=[0-9]:).*?(?=ping)/g
     return [["test", {name: "test", steamid:0}]]; //temporary filler data
   }
 }
