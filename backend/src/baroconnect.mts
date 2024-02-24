@@ -1,7 +1,7 @@
-//@ts-nocheck // Do not remove until import errors are resolved.
 import * as nodepty from "node-pty";
 //import steamconnector from "./steamconnect.mjs"
 import {Player} from "./main.mjs";
+import fs from "fs-extra";
 
 export default class BaroConnect{
   #server;
@@ -11,9 +11,16 @@ export default class BaroConnect{
     if(guard === true){throw "Do not construct directly, use the static create method"};
     if(BaroConnect.#singleton === true){throw "Do not create multiple instances of BaroConnect"};
     BaroConnect.#singleton = true;
-    this.#server = nodepty.spawn("../btserver", "c", {});
+    this.#server = this.#initTerminal();
     this.#server.write("\n");
     this.#playerlist = this.#initPlayerList();
+  }
+  #initTerminal(){
+    const term = nodepty.spawn("bash", [], {});
+    term.onData((data)=>{process.stdout.write(`RAW:${data}`)});
+    term.write("cd ~/\n");
+    term.write("./btserver c\n");
+    return term;
   }
   #initPlayerList(){
     const list = new Map(this.clientList());
@@ -61,11 +68,21 @@ export default class BaroConnect{
     this.runCommand(`banip ${player}`);
   }
   clientList():[[Player["name"], Player]]{
+    const responseList:string[] = [];
+    let recording = false
     let listener = this.#server.onData((data)=>{
-      process.stdout.write(data);
+      if(data.includes("***************") && recording === false){
+        recording = true;
+      }else if(data.includes("***************") && recording === true && responseList.length > 3){
+        recording = false;
+        fs.writeFileSync("test.json", JSON.stringify(responseList));
+        listener.dispose();
+      }
+      if(recording){
+        responseList.push(JSON.stringify(data));
+      }
     });
     this.runCommand(`clientlist`);
-    listener.dispose();
     return [["test", {name: "test", steamid:0}]]; //temporary filler data
   }
 }
