@@ -19,6 +19,7 @@
       "target": "esnext",
       "alwaysStrict": true,
       "noImplicitAny": true,
-      "sourceMap": true
+      "sourceMap": true,
+      "incremental": true
   }
 }
