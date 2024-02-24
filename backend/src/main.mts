@@ -1,4 +1,3 @@
-//@ts-nocheck
 import WebSocket, { RawData, WebSocketServer } from "ws";
 import BaroConnect from "./baroconnect.mjs";
 const port = 3000;
@@ -16,6 +15,7 @@ export interface Player {
 let playerList: Player[] = []; // Players that have joined since start.
 playerList.push({ steamid: '4484', name: 'Frank' }, { steamid: '8372', name: 'Tom_Ran' });
 
+console.log("client connected");
 wss.on('connection', (ws: WebSocket) => {
         ws.on('error', console.error);
         console.log("client connected");
