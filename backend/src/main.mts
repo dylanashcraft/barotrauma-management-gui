@@ -28,6 +28,15 @@ wss.on('connection', (ws: WebSocket) => {
                     case "orange":
                         console.log(`orange button:${payload}`);
                         break;
+                    case "ban":
+                        console.log(`ban button:${payload}`);
+                        break;
+                    case "kick":
+                        console.log(`kick button:${payload}`);
+                        break;
+                    case "customcommand":
+                        console.log(`custom command to run:${payload}`);
+                        break;
                     default:
                         console.log(`Unknown topic: ${topic} with payload:${payload}`);
                 }

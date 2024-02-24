@@ -46,6 +46,11 @@ export default class BaroConnect{
   get playerlist(){
     return this.#playerlist;
   }
+  orangePlayer(player: string){
+    this.runCommand(`spawn Orangeboy inside`); // Spawn orange inside living environment
+    this.runCommand(`setclientcharacter ${player}`); // Set player to newly spawned orange
+    this.runCommand(`say 'A ${player} has been sprinkled with fairy dust.'`);
+  }
   runCommand(command: string){
     this.#server.write(`${command}\n`);
   }
