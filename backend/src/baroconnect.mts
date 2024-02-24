@@ -17,7 +17,7 @@ export default class BaroConnect{
   }
   #initTerminal(){
     const term = nodepty.spawn("bash", [], {});
-    term.onData((data)=>{process.stdout.write(`RAW:${data}`)});
+    //term.onData((data)=>{process.stdout.write(`RAW:${data}`)});
     term.write("cd ~/\n");
     term.write("./btserver c\n");
     return term;
@@ -69,20 +69,16 @@ export default class BaroConnect{
   }
   clientList():[[Player["name"], Player]]{
     const responseList:string[] = [];
-    let recording = false
     let listener = this.#server.onData((data)=>{
-      if(data.includes("***************") && recording === false){
-        recording = true;
-      }else if(data.includes("***************") && recording === true && responseList.length > 3){
-        recording = false;
+      responseList.push(JSON.stringify(data));
+      if(responseList.length >= 100){
         fs.writeFileSync("test.json", JSON.stringify(responseList));
         listener.dispose();
       }
-      if(recording){
-        responseList.push(JSON.stringify(data));
-      }
+      
     });
     this.runCommand(`clientlist`);
+    //listener.dispose();
     return [["test", {name: "test", steamid:0}]]; //temporary filler data
   }
 }
