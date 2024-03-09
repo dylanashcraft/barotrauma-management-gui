@@ -32,13 +32,19 @@ export default class BaroConnect{
   static create(){
     return new BaroConnect(false);
   }
+  //WIP
   #onJoin(){
     this.#server.onData((data)=>{
       if(data.includes("has joined the server.")){
+        let player = data.match(/\] *(.*) has joined the server/)?.[1];
+        if(this.#playerhistory.has(`${player}`)){
+          this.#playerhistory.delete(`${player}`);
+        }
         this.#dirty = true;
       }
     });
   }
+  //WIP
   #onLeave(){
     this.#server.onData((data)=>{
       if(data.includes("has left the server.")){
@@ -46,8 +52,13 @@ export default class BaroConnect{
       }
     });
   }
-  get playerlist(){
-    return this.#playerlist;
+  //WIP
+  #onNameChange(){
+    this.#server.onData((data)=>{
+      if(data.includes("has left the server.")){
+        this.#dirty = true;
+      }
+    });
   }
   runCommand(command: string){
     this.#server.write(`${command}\n`);
@@ -84,26 +95,39 @@ export default class BaroConnect{
     }
     return this.#playerlist;
   }
-  #clientList():Array<[Player["accountname"], Player]>{
-    let responseList: Array<[Player["accountname"], Player]> | [] = [];
+  get PlayerHistory(){
+    return this.#playerhistory;
+  }
+  #clientList(): Array<[Player["playername"], Player]>{
+    let responseList: Array<[Player["playername"], Player]> | unknown[] = [];
     let listener = this.#server.onData((data)=>{
-      const regex = /(?=[0-9]: ).*?(?=ping)/g;
+      const regex = /(?<=[0-9]: ).*?(?=, ping)/g;
       let list = [...data.matchAll(regex)];
       for(const player of list){
         if(player[0] !== null){
-          let temp = player[0].split(",");
-          responseList.push()
+          let matcharray = player[0].match(/(.*) playing (.*), (.*), Some<AccountId>\((.*)_(.*)\)/);
+          if(!matcharray){
+            this.#logErr(`matcharray is ${matcharray}, input was: ${player[0]}.`)
+          }else if(matcharray?.length === 6){
+            responseList.push([matcharray[2] as string, {playername: matcharray[2], accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other", ip: matcharray[3]} as Player])
+          }else if(matcharray.length !== 6){
+            this.#logErr(`matcharray is of incorrect size, size: ${matcharray.length}, matcharray: ${matcharray}, input was: ${player[0]}.`)
+          }else{
+            this.#logErr(`matcharray is invalid, matcharray: ${matcharray}, input was: ${player[0]}.`)
+          }
         }
       }
-      
       //fs.appendFileSync("test.json", JSON.stringify(data.matchAll(regex)));
     });
     this.runCommand(`clientlist`);
     listener.dispose();
     this.#dirty = false;
-    return responseList;
+    return responseList as Array<[Player["playername"], Player]>;
+  }
+  #logErr(error: string){
+    fs.appendFileSync("backend.error.log", error);
   }
 }
-/*commands to implement:
-  clientlist: needs custom event logic
-*/
+//work on state management for #playerlist && #playerhistory
+//finish #onJoin(), #onLeave(), && #onNameChange()
+//possibly ad event handler for above
