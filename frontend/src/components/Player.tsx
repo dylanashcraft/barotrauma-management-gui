@@ -2,14 +2,16 @@ import React from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import NavBar from "./NavBar";
 
-interface Player {
-    steamid: string;
-    name: string;
+export interface Player {
+    playername: string;
+    accountname: string
+    playerid: string | number;
+    type: "steam" | "other"
+    ip: string
 }
 
 
 const Player: React.FC = () => {
-
     const wsURL = "ws://localhost:3000";
     const {
         sendJsonMessage,
@@ -20,7 +22,6 @@ const Player: React.FC = () => {
     });
 
     const [playerList, setPlayerList] = React.useState<Array<Player>>([]);
-
     React.useEffect(() => {
         if (lastMessage) {
             const data: Player[] = JSON.parse(lastMessage.data);
@@ -29,30 +30,31 @@ const Player: React.FC = () => {
         }
     }, [lastMessage]);
 
-    const handleButtonOrange = (player: string) => {
-        if (ReadyState.OPEN === 1) console.log("WS Open");
-        else console.log("ERR: WS NOT READY");
-        const buttonCommand = "orange";
-        console.log(`Using:${buttonCommand} with ${player}`);
-        sendJsonMessage({ 
-            topic: buttonCommand,
-            payload: player 
-        });
+    const handleButtonCommand = (player: string, buttonCommand: string) => {
+        if (ReadyState.OPEN === 1) {
+            console.log(`Using:${buttonCommand} with ${player}`);
+            return sendJsonMessage({
+                topic: buttonCommand,
+                payload: player
+            });
+        } else console.log("ERR: WS NOT READY");
+
     };
 
-  return (
-    <div className="card">
-    <NavBar />
-    <ul>
-        {playerList.map((player) => (
-            <li key={player.steamid}> 
-                User:{player.name} Steam ID:{player.steamid}
-                <button onClick={() => handleButtonOrange(player.name)}>Orange</button>
-            </li>
-        ))}
-    </ul>
-    </div>
-  );
+    return (
+        <div className="card">
+            <NavBar />
+            <ul>
+                {playerList.map((player) => (
+                    <li key={player.playerid}>
+                        User:{player.playername + `[${player.accountname}]`} Steam ID:{player.playerid}
+                        <button onClick={() => handleButtonCommand(player.playername, "orange")}>Orange</button>
+                        <button onClick={() => handleButtonCommand(player.playername, "ban")}>Ban</button>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 };
 
 export default Player;
