@@ -5,15 +5,18 @@ const wss = new WebSocketServer({ port: port });
 
 
 export interface Player {
-    steamid: string|number;
-    name: string;
+    playername: string;
+    accountname: string
+    playerid: string|number;
+    type: "steam"|"other"
+    ip: string
 }
 
 
 //let frontendRequest: {name: string, command: string}[] = [];
 
 let playerList: Player[] = []; // Players that have joined since start.
-playerList.push({ steamid: '4484', name: 'Frank' }, { steamid: '8372', name: 'Tom_Ran' });
+playerList.push({ playerid: '4484', accountname: 'Frank', playername: "Lt. Awsomeface", type: "steam", ip: "634525" }, { playerid: '8372', accountname: 'Tom_Ran', playername: "Marquis de la Poofayette", type: "other", ip: "347436" });
 
 console.log("client connected");
 wss.on('connection', (ws: WebSocket) => {
