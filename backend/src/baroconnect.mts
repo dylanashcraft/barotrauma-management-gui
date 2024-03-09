@@ -5,7 +5,9 @@ import fs from "fs-extra";
 
 export default class BaroConnect{
   #server;
-  #playerlist: Map<Player["name"], Player>;
+  #playerlist: Map<Player["accountname"], Player>;
+  #playerhistory: Map<Player["accountname"], Player>;
+  #dirty = true;
   static #singleton = false;
   constructor(guard = true){
     if(guard === true){throw "Do not construct directly, use the static create method"};
@@ -14,6 +16,7 @@ export default class BaroConnect{
     this.#server = this.#initTerminal();
     this.#server.write("\n");
     this.#playerlist = this.#initPlayerList();
+    this.#playerhistory = new Map();
   }
   #initTerminal(){
     const term = nodepty.spawn("bash", [], {});
@@ -23,7 +26,7 @@ export default class BaroConnect{
     return term;
   }
   #initPlayerList(){
-    const list = new Map(this.clientList());
+    const list = new Map(this.#clientList());
     return list;
   }
   static create(){
@@ -32,27 +35,30 @@ export default class BaroConnect{
   #onJoin(){
     this.#server.onData((data)=>{
       if(data.includes("has joined the server.")){
-
+        this.#dirty = true;
       }
     });
   }
   #onLeave(){
     this.#server.onData((data)=>{
       if(data.includes("has left the server.")){
-
+        this.#dirty = true;
       }
     });
   }
   get playerlist(){
     return this.#playerlist;
   }
-  orangePlayer(player: string){
+  runCommand(command: string){
+    this.#server.write(`${command}\n`);
+  }
+  say(message: string){
+    this.runCommand(`say ${message}`)
+  }
+  orangeboyify(player: string){
     this.runCommand(`spawn Orangeboy inside`); // Spawn orange inside living environment
     this.runCommand(`setclientcharacter ${player}`); // Set player to newly spawned orange
     this.runCommand(`say 'A ${player} has been sprinkled with fairy dust.'`);
-  }
-  runCommand(command: string){
-    this.#server.write(`${command}\n`);
   }
   kick(player: string){
     this.runCommand(`kick ${player}`);
@@ -72,19 +78,30 @@ export default class BaroConnect{
   banIP(player: string){
     this.runCommand(`banip ${player}`);
   }
-  clientList():[[Player["name"], Player]]{
-    const responseList:string[] = [];
+  get PlayerList(){
+    if(this.#dirty){
+      this.#clientList();
+    }
+    return this.#playerlist;
+  }
+  #clientList():Array<[Player["accountname"], Player]>{
+    let responseList: Array<[Player["accountname"], Player]> | [] = [];
     let listener = this.#server.onData((data)=>{
-      responseList.push(JSON.stringify(data));
-      if(responseList.length >= 100){
-        fs.writeFileSync("test.json", JSON.stringify(responseList));
-        listener.dispose();
+      const regex = /(?=[0-9]: ).*?(?=ping)/g;
+      let list = [...data.matchAll(regex)];
+      for(const player of list){
+        if(player[0] !== null){
+          let temp = player[0].split(",");
+          responseList.push()
+        }
       }
       
+      //fs.appendFileSync("test.json", JSON.stringify(data.matchAll(regex)));
     });
     this.runCommand(`clientlist`);
-    ///(?<=[0-9]:).*?(?=ping)/g
-    return [["test", {name: "test", steamid:0}]]; //temporary filler data
+    listener.dispose();
+    this.#dirty = false;
+    return responseList;
   }
 }
 /*commands to implement:
