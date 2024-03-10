@@ -2,10 +2,7 @@ import React from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import NavBar from "./NavBar";
 
-interface Player {
-    steamid: string;
-    name: string;
-}
+import {Player} from "../../../shared/interfaces.mjs";
 
 
 const Player: React.FC = () => {
@@ -45,9 +42,9 @@ const Player: React.FC = () => {
     <NavBar />
     <ul>
         {playerList.map((player) => (
-            <li key={player.steamid}> 
-                User:{player.name} Steam ID:{player.steamid}
-                <button onClick={() => handleButtonOrange(player.name)}>Orange</button>
+            <li key={player.playerid}> 
+                User:{player.playername} Steam ID:{player.playerid}
+                <button onClick={() => handleButtonOrange(player.playername)}>Orange</button>
             </li>
         ))}
     </ul>
