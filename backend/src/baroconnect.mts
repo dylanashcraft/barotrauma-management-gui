@@ -1,6 +1,6 @@
 import * as nodepty from "node-pty";
 //import steamconnector from "./steamconnect.mjs"
-import {Player} from "./main.mjs";
+import {Player} from "../../shared/interfaces.mjs";
 import fs from "fs-extra";
 
 export default class BaroConnect{
@@ -17,6 +17,7 @@ export default class BaroConnect{
     this.#server.write("\n");
     this.#playerlist = this.#initPlayerList();
     this.#playerhistory = new Map();
+    this.#initEvents();
   }
   #initTerminal(){
     const term = nodepty.spawn("bash", [], {});
@@ -29,6 +30,11 @@ export default class BaroConnect{
     const list = new Map(this.#clientList());
     return list;
   }
+  #initEvents(){
+    this.#onJoin();
+    this.#onLeave();
+    //this.#onNameChange();
+  }
   static create(){
     return new BaroConnect(false);
   }
@@ -37,8 +43,8 @@ export default class BaroConnect{
     this.#server.onData((data)=>{
       if(data.includes("has joined the server.")){
         let player = data.match(/\] *(.*) has joined the server/)?.[1];
-        if(this.#playerhistory.has(`${player}`)){
-          this.#playerhistory.delete(`${player}`);
+        if(player){
+          this.#playerhistory.delete(player);
         }
         this.#dirty = true;
       }
@@ -48,6 +54,12 @@ export default class BaroConnect{
   #onLeave(){
     this.#server.onData((data)=>{
       if(data.includes("has left the server.")){
+        let player = data.match(/\] *(.*) has left the server/)?.[1];
+        if(player && this.#playerlist.has(player)){
+          this.#playerhistory.set(player, this.#playerlist.get(player) as Player);
+        }else{
+          this.#logErr(`Player ${player} has left but never joined.`)
+        }
         this.#dirty = true;
       }
     });
@@ -55,48 +67,47 @@ export default class BaroConnect{
   //WIP
   #onNameChange(){
     this.#server.onData((data)=>{
-      if(data.includes("has left the server.")){
+      if(data.includes("previously used the name")){
+        let [,name, oldname] = data.match(/\]\n *(.*) previously used the name "(.*)"/) as RegExpMatchArray;
+
         this.#dirty = true;
       }
     });
   }
-  runCommand(command: string){
+  #runCommand(command: string){
     this.#server.write(`${command}\n`);
   }
   say(message: string){
-    this.runCommand(`say ${message}`)
+    this.#runCommand(`say ${message}`)
   }
   orangeboyify(player: string){
-    this.runCommand(`spawn Orangeboy inside`); // Spawn orange inside living environment
-    this.runCommand(`setclientcharacter ${player}`); // Set player to newly spawned orange
-    this.runCommand(`say 'A ${player} has been sprinkled with fairy dust.'`);
+    this.#runCommand(`spawn Orangeboy inside`); // Spawn orange inside living environment
+    this.#runCommand(`setclientcharacter ${player}`); // Set player to newly spawned orange
+    this.#runCommand(`say 'A ${player} has been sprinkled with fairy dust.'`);
   }
   kick(player: string){
-    this.runCommand(`kick ${player}`);
+    this.#runCommand(`kick ${player}`);
   }
   kickID(player: string){
-    this.runCommand(`kickid ${player}`);
+    this.#runCommand(`kickid ${player}`);
   }
   ban(player: string){
-    this.runCommand(`ban ${player}`);
+    this.#runCommand(`ban ${player}`);
   }
   banID(player: string){
-    this.runCommand(`banid ${player}`);
+    this.#runCommand(`banid ${player}`);
   }
   banEndpoint(player: string){
-    this.runCommand(`banendpoint ${player}`);
+    this.#runCommand(`banendpoint ${player}`);
   }
   banIP(player: string){
-    this.runCommand(`banip ${player}`);
+    this.#runCommand(`banip ${player}`);
   }
-  get PlayerList(){
+  get Players(){
     if(this.#dirty){
       this.#clientList();
     }
-    return this.#playerlist;
-  }
-  get PlayerHistory(){
-    return this.#playerhistory;
+    return {PlayerList: this.#playerlist, PlayerHistory: this.#playerhistory};
   }
   #clientList(): Array<[Player["playername"], Player]>{
     let responseList: Array<[Player["playername"], Player]> | unknown[] = [];
@@ -119,13 +130,13 @@ export default class BaroConnect{
       }
       //fs.appendFileSync("test.json", JSON.stringify(data.matchAll(regex)));
     });
-    this.runCommand(`clientlist`);
+    this.#runCommand(`clientlist`);
     listener.dispose();
     this.#dirty = false;
     return responseList as Array<[Player["playername"], Player]>;
   }
   #logErr(error: string){
-    fs.appendFileSync("backend.error.log", error);
+    fs.appendFileSync("logs/backend.log", error);
   }
 }
 //work on state management for #playerlist && #playerhistory
