@@ -2,16 +2,7 @@ import WebSocket, { RawData, WebSocketServer } from "ws";
 import BaroConnect from "./baroconnect.mjs";
 const port = 3000;
 const wss = new WebSocketServer({ port: port });
-
-
-export interface Player {
-    playername: string;
-    accountname: string
-    playerid: string|number;
-    type: "steam"|"other"
-    ip: string
-}
-
+import {Player} from "../../shared/interfaces.mjs";
 
 //let frontendRequest: {name: string, command: string}[] = [];
 
