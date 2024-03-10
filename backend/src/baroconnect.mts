@@ -8,9 +8,10 @@ export default class BaroConnect{
   #playerlist: Map<Player["accountname"], Player>;
   #playerhistory: Map<Player["accountname"], Player>;
   #dirty = true;
+  static #guard = true;
   static #singleton = false;
-  constructor(guard = true){
-    if(guard === true){throw "Do not construct directly, use the static create method"};
+  constructor(){
+    if(BaroConnect.#guard === true){throw "Do not construct directly, use the static create method"};
     if(BaroConnect.#singleton === true){throw "Do not create multiple instances of BaroConnect"};
     BaroConnect.#singleton = true;
     this.#server = this.#initTerminal();
@@ -18,6 +19,7 @@ export default class BaroConnect{
     this.#playerlist = this.#initPlayerList();
     this.#playerhistory = new Map();
     this.#initEvents();
+    BaroConnect.#guard = true;
   }
   #initTerminal(){
     const term = nodepty.spawn("bash", [], {});
@@ -33,28 +35,35 @@ export default class BaroConnect{
   #initEvents(){
     this.#onJoin();
     this.#onLeave();
-    //this.#onNameChange();
+    this.#onNameChange();
   }
   static create(){
-    return new BaroConnect(false);
+    this.#guard = false
+    return new BaroConnect();
   }
-  //WIP
   #onJoin(){
     this.#server.onData((data)=>{
       if(data.includes("has joined the server.")){
-        let player = data.match(/\] *(.*) has joined the server/)?.[1];
-        if(player){
-          this.#playerhistory.delete(player);
+        const player = data.match(/\] *(.*) has joined the server/)?.[1];
+        if(player && this.#playerhistory.has(player)){
+          this.#playerlist.set(player, this.#playerhistory.get(player) as Player);
+        }
+        this.#dirty = true;
+      }else if(data.includes("previously used the name")){
+        const [,name, oldname] = data.match(/\]\n *(.*) previously used the name "(.*)"/) as RegExpMatchArray;
+        if(name && this.#playerlist.has(name)){
+          let entry = this.#playerlist.get(name) as Player;
+          entry.aliases?.push(oldname as string) ?? Object.defineProperty(entry, "aliases", [oldname]); //I THINK this works.
+          this.#playerlist.set(name, entry);
         }
         this.#dirty = true;
       }
     });
   }
-  //WIP
   #onLeave(){
     this.#server.onData((data)=>{
       if(data.includes("has left the server.")){
-        let player = data.match(/\] *(.*) has left the server/)?.[1];
+        const player = data.match(/\] *(.*) has left the server/)?.[1];
         if(player && this.#playerlist.has(player)){
           this.#playerhistory.set(player, this.#playerlist.get(player) as Player);
         }else{
@@ -64,14 +73,9 @@ export default class BaroConnect{
       }
     });
   }
-  //WIP
   #onNameChange(){
     this.#server.onData((data)=>{
-      if(data.includes("previously used the name")){
-        let [,name, oldname] = data.match(/\]\n *(.*) previously used the name "(.*)"/) as RegExpMatchArray;
-
-        this.#dirty = true;
-      }
+      
     });
   }
   #runCommand(command: string){
@@ -111,18 +115,23 @@ export default class BaroConnect{
   }
   #clientList(): Array<[Player["playername"], Player]>{
     let responseList: Array<[Player["playername"], Player]> | unknown[] = [];
-    let listener = this.#server.onData((data)=>{
+    const listener = this.#server.onData((data)=>{
       const regex = /(?<=[0-9]: ).*?(?=, ping)/g;
-      let list = [...data.matchAll(regex)];
+      const list = [...data.matchAll(regex)];
       for(const player of list){
         if(player[0] !== null){
-          let matcharray = player[0].match(/(.*) playing (.*), (.*), Some<AccountId>\((.*)_(.*)\)/);
+          const matcharray = player[0].match(/(.*) playing (.*), (.*), Some<AccountId>\((.*)_(.*)\)/);
           if(!matcharray){
             this.#logErr(`matcharray is ${matcharray}, input was: ${player[0]}.`)
-          }else if(matcharray?.length === 6){
-            responseList.push([matcharray[2] as string, {playername: matcharray[2], accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other", ip: matcharray[3]} as Player])
           }else if(matcharray.length !== 6){
             this.#logErr(`matcharray is of incorrect size, size: ${matcharray.length}, matcharray: ${matcharray}, input was: ${player[0]}.`)
+          }else if(matcharray?.length === 6 && (matcharray.length > matcharray.filter(() => true).length)){
+            const name = matcharray[2] as string;
+            if(this.#playerhistory.has(name)){
+              responseList.push([name, this.#playerhistory.get(name) as Player]);
+            }else{
+              responseList.push([name, {playername: name, accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other", ip: matcharray[3]} as Player])
+            }
           }else{
             this.#logErr(`matcharray is invalid, matcharray: ${matcharray}, input was: ${player[0]}.`)
           }
