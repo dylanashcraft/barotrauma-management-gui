@@ -1,6 +1,6 @@
 {
   "include": ["src/**/*"],
-  "exclude": [],
+  "exclude": ["interfaces.mts"],
   "compilerOptions": {
       "module": "NodeNext",
       "allowSyntheticDefaultImports": true,
