@@ -2,9 +2,11 @@ import * as nodepty from "node-pty";
 //import steamconnector from "./steamconnect.mjs"
 import {Player} from "../../shared/interfaces.mjs";
 import fs from "fs-extra";
+import EventEmitter from "events";
 
 export default class BaroConnect{
   #server;
+  #EventHandler;
   #playerlist: Map<Player["accountname"], Player>;
   #playerhistory: Map<Player["accountname"], Player>;
   #dirty = true;
@@ -20,6 +22,7 @@ export default class BaroConnect{
     this.#playerhistory = new Map();
     this.#initEvents();
     BaroConnect.#guard = true;
+    this.#EventHandler = new EventEmitter();
   }
   #initTerminal(){
     const term = nodepty.spawn("bash", [], {});
@@ -47,16 +50,10 @@ export default class BaroConnect{
         const player = data.match(/\] *(.*) has joined the server/)?.[1];
         if(player && this.#playerhistory.has(player)){
           this.#playerlist.set(player, this.#playerhistory.get(player) as Player);
+          this.#EventHandler.emit("change");
+        }else{
+          this.#dirty = true;
         }
-        this.#dirty = true;
-      }else if(data.includes("previously used the name")){
-        const [,name, oldname] = data.match(/\]\n *(.*) previously used the name "(.*)"/) as RegExpMatchArray;
-        if(name && this.#playerlist.has(name)){
-          let entry = this.#playerlist.get(name) as Player;
-          entry.aliases?.push(oldname as string) ?? Object.defineProperty(entry, "aliases", [oldname]); //I THINK this works.
-          this.#playerlist.set(name, entry);
-        }
-        this.#dirty = true;
       }
     });
   }
@@ -66,16 +63,35 @@ export default class BaroConnect{
         const player = data.match(/\] *(.*) has left the server/)?.[1];
         if(player && this.#playerlist.has(player)){
           this.#playerhistory.set(player, this.#playerlist.get(player) as Player);
+          this.#playerlist.delete(player);
+          this.#EventHandler.emit("change");
         }else{
-          this.#logErr(`Player ${player} has left but never joined.`)
+          this.#logErr(`Player ${player} has left but never joined.`);
+          this.#dirty = true;
         }
-        this.#dirty = true;
       }
     });
   }
   #onNameChange(){
     this.#server.onData((data)=>{
-      
+      if(data.includes("has changed their name to")){
+        const [,oldname, newname] = data.match(/Player (.*) has changed their name to (.*)./) as RegExpMatchArray;
+        if(oldname && newname && this.#playerlist.has(oldname)){
+          let entry = this.#playerlist.get(oldname) as Player;
+          entry.aliases?.add(oldname) ?? Object.defineProperty(entry, "aliases", new Set([oldname])); //I THINK this works.
+          this.#playerlist.set(newname, entry);
+          this.#playerlist.delete(oldname);
+          this.#EventHandler.emit("change");
+        }
+      }else if(data.includes("previously used the name")){
+        const [,name, oldname] = data.match(/\]\n *(.*) previously used the name "(.*)"/) as RegExpMatchArray;
+        if(name && oldname && this.#playerlist.has(name)){
+          let entry = this.#playerlist.get(name) as Player;
+          entry.aliases?.add(oldname) ?? Object.defineProperty(entry, "aliases", new Set([oldname])); //I THINK this works.
+          this.#playerlist.set(name, entry);
+          this.#EventHandler.emit("change");
+        }
+      }
     });
   }
   #runCommand(command: string){
@@ -109,7 +125,8 @@ export default class BaroConnect{
   }
   get Players(){
     if(this.#dirty){
-      this.#clientList();
+      this.#playerlist.clear();
+      this.#clientList().forEach(([name, data])=>{this.#playerlist.set(name, data)});
     }
     return {PlayerList: this.#playerlist, PlayerHistory: this.#playerhistory};
   }
@@ -129,6 +146,8 @@ export default class BaroConnect{
             const name = matcharray[2] as string;
             if(this.#playerhistory.has(name)){
               responseList.push([name, this.#playerhistory.get(name) as Player]);
+            }else if(this.#playerlist.has(name)){
+              responseList.push([name, this.#playerlist.get(name) as Player])
             }else{
               responseList.push([name, {playername: name, accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other", ip: matcharray[3]} as Player])
             }
@@ -147,7 +166,7 @@ export default class BaroConnect{
   #logErr(error: string){
     fs.appendFileSync("logs/backend.log", error);
   }
+  onChange(func: Function){
+    this.#EventHandler.on("change", func());
+  }
 }
-//work on state management for #playerlist && #playerhistory
-//finish #onJoin(), #onLeave(), && #onNameChange()
-//possibly ad event handler for above
