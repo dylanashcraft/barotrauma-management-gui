@@ -4,5 +4,5 @@ export interface Player {
   playerid: string;
   type: "steam"|"other"
   ip: string
-  aliases?: string[]
+  aliases?: Set<string>
 }
