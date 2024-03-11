@@ -2,17 +2,7 @@ import React from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import NavBar from "./NavBar";
 
-<<<<<<< HEAD
-export interface Player {
-    playername: string;
-    accountname: string
-    playerid: string | number;
-    type: "steam" | "other"
-    ip: string
-}
-=======
 import {Player} from "../../../shared/interfaces.mjs";
->>>>>>> refs/remotes/origin/main
 
 
 const Player: React.FC = () => {
@@ -45,7 +35,6 @@ const Player: React.FC = () => {
 
     };
 
-<<<<<<< HEAD
     return (
         <div className="card">
             <NavBar />
@@ -60,21 +49,6 @@ const Player: React.FC = () => {
             </ul>
         </div>
     );
-=======
-  return (
-    <div className="card">
-    <NavBar />
-    <ul>
-        {playerList.map((player) => (
-            <li key={player.playerid}> 
-                User:{player.playername} Steam ID:{player.playerid}
-                <button onClick={() => handleButtonOrange(player.playername)}>Orange</button>
-            </li>
-        ))}
-    </ul>
-    </div>
-  );
->>>>>>> refs/remotes/origin/main
 };
 
 export default Player;
