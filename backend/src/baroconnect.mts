@@ -53,6 +53,7 @@ export default class BaroConnect{
           this.#EventHandler.emit("change");
         }else{
           this.#dirty = true;
+          this.#EventHandler.emit("rebuild");
         }
       }
     });
@@ -68,6 +69,7 @@ export default class BaroConnect{
         }else{
           this.#logErr(`Player ${player} has left but never joined.`);
           this.#dirty = true;
+          this.#EventHandler.emit("rebuild");
         }
       }
     });
@@ -125,7 +127,6 @@ export default class BaroConnect{
   }
   get Players(){
     if(this.#dirty){
-      this.#playerlist.clear();
       this.#clientList().forEach(([name, data])=>{this.#playerlist.set(name, data)});
     }
     return {PlayerList: this.#playerlist, PlayerHistory: this.#playerhistory};
@@ -166,7 +167,17 @@ export default class BaroConnect{
   #logErr(error: string){
     fs.appendFileSync("logs/backend.log", error);
   }
-  onChange(func: Function){
-    this.#EventHandler.on("change", func());
+  addEventHandler(type: "change"|"rebuild" , func: Function){
+    switch(type){
+      case "change":
+        this.#EventHandler.on("change", func());
+      break;
+      case "rebuild":
+        this.#EventHandler.on("change", func());
+      break;
+      default:
+        this.#logErr("Invalid event type");
+      break;
+    }
   }
 }
