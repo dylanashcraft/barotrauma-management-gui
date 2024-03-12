@@ -18,8 +18,9 @@ export default class BaroConnect{
     BaroConnect.#singleton = true;
     this.#server = this.#initTerminal();
     this.#server.write("\n");
-    this.#playerlist = this.#initPlayerList();
-    this.#playerhistory = new Map();
+    this.#playerlist = new Map();
+    this.#playerhistory = new Map();  
+    this.#initPlayerList();
     this.#initEvents();
     BaroConnect.#guard = true;
     this.#EventHandler = new EventEmitter();
@@ -32,13 +33,13 @@ export default class BaroConnect{
     return term;
   }
   #initPlayerList(){
-    const list = new Map(this.#clientList());
-    return list;
+    this.#clientList();
   }
   #initEvents(){
     this.#onJoin();
     this.#onLeave();
     this.#onNameChange();
+    this.#onClientList();
   }
   static create(){
     this.#guard = false
@@ -50,11 +51,10 @@ export default class BaroConnect{
         const player = data.match(/\] *(.*) has joined the server/)?.[1];
         if(player && this.#playerhistory.has(player)){
           this.#playerlist.set(player, this.#playerhistory.get(player) as Player);
-          this.#EventHandler.emit("change");
         }else{
           this.#dirty = true;
-          this.#EventHandler.emit("rebuild");
         }
+        this.#EventHandler.emit("change");
       }
     });
   }
@@ -65,12 +65,11 @@ export default class BaroConnect{
         if(player && this.#playerlist.has(player)){
           this.#playerhistory.set(player, this.#playerlist.get(player) as Player);
           this.#playerlist.delete(player);
-          this.#EventHandler.emit("change");
         }else{
           this.#logErr(`Player ${player} has left but never joined.`);
           this.#dirty = true;
-          this.#EventHandler.emit("rebuild");
         }
+        this.#EventHandler.emit("change");
       }
     });
   }
@@ -93,6 +92,36 @@ export default class BaroConnect{
           this.#playerlist.set(name, entry);
           this.#EventHandler.emit("change");
         }
+      }
+    });
+  }
+  #onClientList(){
+    let responseList: Array<[Player["playername"], Player]> = [];
+    this.#server.onData((data)=>{
+      if(data.includes("), ping ")){
+        const list = [...data.matchAll(/(?<=[0-9]: ).*?(?=, ping)/g)];
+        for(const player of list){
+          if(player[0] !== null){
+            const matcharray = player[0].match(/(.*) playing (.*), (.*), Some<AccountId>\((.*)_(.*)\)/);
+            if(!matcharray){
+              this.#logErr(`matcharray is ${matcharray}, input was: ${player[0]}.`)
+            }else if(matcharray.length !== 6){
+              this.#logErr(`matcharray is of incorrect size, size: ${matcharray.length}, matcharray: ${matcharray}, input was: ${player[0]}.`)
+            }else if(matcharray?.length === 6 && (matcharray.length > matcharray.filter(() => true).length)){
+              const name = matcharray[2] as string;
+              if(this.#playerhistory.has(name)){
+                responseList.push([name, this.#playerhistory.get(name) as Player]);
+              }else if(this.#playerlist.has(name)){
+                responseList.push([name, this.#playerlist.get(name) as Player])
+              }else{
+                responseList.push([name, {playername: name, accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other"} as Player])
+              }
+            }else{
+              this.#logErr(`matcharray is invalid, matcharray: ${matcharray}, input was: ${player[0]}.`)
+            }
+          }
+        }
+        responseList.forEach((data)=>{this.#playerlist.set(data[0], data[1])});
       }
     });
   }
@@ -127,52 +156,20 @@ export default class BaroConnect{
   }
   get Players(){
     if(this.#dirty){
-      this.#clientList().forEach(([name, data])=>{this.#playerlist.set(name, data)});
+      this.#clientList();
     }
     return {PlayerList: this.#playerlist, PlayerHistory: this.#playerhistory};
   }
-  #clientList(): Array<[Player["playername"], Player]>{
-    let responseList: Array<[Player["playername"], Player]> | unknown[] = [];
-    const listener = this.#server.onData((data)=>{
-      const regex = /(?<=[0-9]: ).*?(?=, ping)/g;
-      const list = [...data.matchAll(regex)];
-      for(const player of list){
-        if(player[0] !== null){
-          const matcharray = player[0].match(/(.*) playing (.*), (.*), Some<AccountId>\((.*)_(.*)\)/);
-          if(!matcharray){
-            this.#logErr(`matcharray is ${matcharray}, input was: ${player[0]}.`)
-          }else if(matcharray.length !== 6){
-            this.#logErr(`matcharray is of incorrect size, size: ${matcharray.length}, matcharray: ${matcharray}, input was: ${player[0]}.`)
-          }else if(matcharray?.length === 6 && (matcharray.length > matcharray.filter(() => true).length)){
-            const name = matcharray[2] as string;
-            if(this.#playerhistory.has(name)){
-              responseList.push([name, this.#playerhistory.get(name) as Player]);
-            }else if(this.#playerlist.has(name)){
-              responseList.push([name, this.#playerlist.get(name) as Player])
-            }else{
-              responseList.push([name, {playername: name, accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other"} as Player])
-            }
-          }else{
-            this.#logErr(`matcharray is invalid, matcharray: ${matcharray}, input was: ${player[0]}.`)
-          }
-        }
-      }
-      //fs.appendFileSync("test.json", JSON.stringify(data.matchAll(regex)));
-    });
+  #clientList(){
     this.#runCommand(`clientlist`);
-    listener.dispose();
     this.#dirty = false;
-    return responseList as Array<[Player["playername"], Player]>;
   }
   #logErr(error: string){
     fs.appendFileSync("logs/backend.log", error);
   }
-  on(type: "change"|"rebuild" , func: Function){
+  on(type: "change", func: Function){
     switch(type){
       case "change":
-        this.#EventHandler.on("change", func());
-      break;
-      case "rebuild":
         this.#EventHandler.on("change", func());
       break;
       default:
