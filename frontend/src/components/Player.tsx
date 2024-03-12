@@ -18,7 +18,7 @@ const Player: React.FC = () => {
     const [playerList, setPlayerList] = React.useState<Array<Player>>([]);
     React.useEffect(() => {
         if (lastMessage) {
-            const data: Player[] = JSON.parse(lastMessage.data);
+            const [PlayerList, PlayerHistory] = [JSON.parse(lastMessage.data)[0], JSON.parse(lastMessage.data)[1]];
             setPlayerList(data);
             console.log(data);
         }
