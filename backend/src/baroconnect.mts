@@ -150,7 +150,7 @@ export default class BaroConnect{
             }else if(this.#playerlist.has(name)){
               responseList.push([name, this.#playerlist.get(name) as Player])
             }else{
-              responseList.push([name, {playername: name, accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other", ip: matcharray[3]} as Player])
+              responseList.push([name, {playername: name, accountname: matcharray[1], playerid: matcharray[5], type: matcharray[4] === "STEAM" ? "steam" : "other"} as Player])
             }
           }else{
             this.#logErr(`matcharray is invalid, matcharray: ${matcharray}, input was: ${player[0]}.`)
@@ -167,7 +167,7 @@ export default class BaroConnect{
   #logErr(error: string){
     fs.appendFileSync("logs/backend.log", error);
   }
-  addEventHandler(type: "change"|"rebuild" , func: Function){
+  on(type: "change"|"rebuild" , func: Function){
     switch(type){
       case "change":
         this.#EventHandler.on("change", func());
