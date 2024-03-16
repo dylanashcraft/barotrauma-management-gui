@@ -24,6 +24,8 @@ export default class BaroConnect{
     this.#initEvents();
     BaroConnect.#guard = true;
     this.#EventHandler = new EventEmitter();
+    fs.ensureDirSync("logs");
+    fs.ensureDirSync("dumps");
   }
   #initTerminal(){
     const term = nodepty.spawn("bash", [], {});
@@ -176,5 +178,19 @@ export default class BaroConnect{
         this.#logErr("Invalid event type");
       break;
     }
+  }
+
+  //debug methods
+  dump(){
+    process.stdout.write(`${this.Players}`);
+  }
+  dumpRaw(){
+    process.stdout.write(`${[this.#playerlist, this.#playerhistory]}`);
+  }
+  dumpToFile(){
+    fs.writeJSONSync("dumps/players_dump.json", this.Players);
+  }
+  dumpRawToFile(){
+    fs.writeJSONSync("dumps/players_dump_raw.json", [this.#playerlist, this.#playerhistory]);
   }
 }
